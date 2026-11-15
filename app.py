@@ -210,35 +210,50 @@ EMBED = st.query_params.get("embed") == "1"
 _bg, _dark = pick_background()
 st.markdown(CSS.replace("__BG__", _bg).replace("__DARK__", f"{_dark:.2f}"), unsafe_allow_html=True)
 
-# Recolours Streamlit's default red accent to the blue accent #6399FD, independent of config.toml.
-components.html("""
+# Recolours any red accent of Streamlit's default theme to the blue accent #6399FD.
+# It looks at the real colour of every element, so it does not depend on Streamlit's internal class names.
+components.html(r"""
 <script>
 (function () {
-  const RED = ["rgb(255, 75, 75)", "rgb(255, 43, 43)"];
-  const CREAM = "rgb(99, 153, 253)";  // accent #6399FD
-  const win = window.parent, doc = win.document;
-  let timer = null;
-  function fix() {
-    doc.querySelectorAll("*").forEach(function (el) {
-      const cs = win.getComputedStyle(el);
-      if (RED.indexOf(cs.color) >= 0) el.style.setProperty("color", CREAM, "important");
-      if (RED.indexOf(cs.backgroundColor) >= 0) el.style.setProperty("background-color", CREAM, "important");
-      ["Top", "Bottom", "Left", "Right"].forEach(function (side) {
-        if (RED.indexOf(cs["border" + side + "Color"]) >= 0)
-          el.style.setProperty("border-" + side.toLowerCase() + "-color", CREAM, "important");
-      });
-      const st = el.getAttribute("style");
-      if (st && st.indexOf("255, 75, 75") >= 0)
-        el.setAttribute("style", st.split("rgb(255, 75, 75)").join(CREAM));
+  var ACCENT = [99, 153, 253];
+  var win = window.parent, doc = win.document, timer = null;
+  var RX = /rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/g;
+  var PROPS = [["color", "color"], ["backgroundColor", "background-color"],
+               ["borderTopColor", "border-top-color"], ["borderRightColor", "border-right-color"],
+               ["borderBottomColor", "border-bottom-color"], ["borderLeftColor", "border-left-color"],
+               ["outlineColor", "outline-color"], ["backgroundImage", "background-image"],
+               ["boxShadow", "box-shadow"], ["fill", "fill"], ["stroke", "stroke"]];
+  function isRed(r, g, b) { return r >= 200 && g <= 140 && b <= 140 && (r - g) >= 90 && (r - b) >= 90; }
+  function recolor(str) {
+    return str.replace(RX, function (m, r, g, b, a) {
+      if (!isRed(+r, +g, +b)) return m;
+      return a === undefined ? "rgb(" + ACCENT.join(", ") + ")" : "rgba(" + ACCENT.join(", ") + ", " + a + ")";
     });
+  }
+  function fix() {
+    try {
+      doc.querySelectorAll("*").forEach(function (el) {
+        if (el.closest('[data-testid="stException"], [data-testid="stAlert"]')) return;
+        var cs = win.getComputedStyle(el);
+        PROPS.forEach(function (p) {
+          var v = cs[p[0]];
+          if (v && v.indexOf("rgb") >= 0) {
+            var n = recolor(v);
+            if (n !== v) el.style.setProperty(p[1], n, "important");
+          }
+        });
+      });
+    } catch (e) {}
   }
   function later() { clearTimeout(timer); timer = setTimeout(fix, 150); }
   fix();
+  setTimeout(fix, 800);
+  setTimeout(fix, 2500);
   new MutationObserver(later).observe(doc.body, {subtree: true, childList: true, attributes: true,
                                                  attributeFilter: ["style", "class"]});
 })();
 </script>
-""", height=0)
+""", height=1)
 if EMBED:
     st.markdown("<style>.hero, div[data-baseweb='tab-list'], [data-testid='stSidebar'], "
                 "[data-testid='stSidebarCollapsedControl'] { display: none !important; } "
