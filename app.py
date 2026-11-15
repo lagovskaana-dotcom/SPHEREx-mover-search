@@ -1889,6 +1889,8 @@ with tab_tool:
 
 st.markdown(
     "<p class='small' style='text-align:center;margin-top:2rem'>Data: SPHEREx and the NASA/IPAC Infrared Science "
-    "Archive (IRSA); Gaia (ESA); AllWISE. Unofficial educational project, not affiliated with NASA or Caltech.</p>",
+    "Archive (IRSA); Gaia (ESA); AllWISE. Background image: Hubble\u2019s Hunting Dog Galaxy (NGC 4242). "
+    "Credit: ESA/Hubble &amp; NASA, via the NASA Image and Video Library. "
+    "Unofficial educational project, not affiliated with NASA or Caltech.</p>",
     unsafe_allow_html=True,
 )
