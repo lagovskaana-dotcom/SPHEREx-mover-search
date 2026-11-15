@@ -211,27 +211,42 @@ _bg, _dark = pick_background()
 st.markdown(CSS.replace("__BG__", _bg).replace("__DARK__", f"{_dark:.2f}"), unsafe_allow_html=True)
 
 # Recolours any red accent of Streamlit's default theme to the blue accent #6399FD.
-# It looks at the real colour of every element, so it does not depend on Streamlit's internal class names.
+# It looks at the real colour of every element. Before each pass it undoes its own earlier changes, so
+# Streamlit can keep updating things like the filled part of a slider.
 components.html(r"""
 <script>
 (function () {
-  var ACCENT = [99, 153, 253];
-  var win = window.parent, doc = win.document, timer = null;
+  var ACCENT = "99, 153, 253";
+  var win = window.parent, doc = win.document, timer = null, touched = [];
   var RX = /rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/g;
   var PROPS = [["color", "color"], ["backgroundColor", "background-color"],
                ["borderTopColor", "border-top-color"], ["borderRightColor", "border-right-color"],
                ["borderBottomColor", "border-bottom-color"], ["borderLeftColor", "border-left-color"],
                ["outlineColor", "outline-color"], ["backgroundImage", "background-image"],
                ["boxShadow", "box-shadow"], ["fill", "fill"], ["stroke", "stroke"]];
+  var CFG = {subtree: true, childList: true, attributes: true, attributeFilter: ["style", "class"]};
   function isRed(r, g, b) { return r >= 200 && g <= 140 && b <= 140 && (r - g) >= 90 && (r - b) >= 90; }
   function recolor(str) {
     return str.replace(RX, function (m, r, g, b, a) {
       if (!isRed(+r, +g, +b)) return m;
-      return a === undefined ? "rgb(" + ACCENT.join(", ") + ")" : "rgba(" + ACCENT.join(", ") + ", " + a + ")";
+      return a === undefined ? "rgb(" + ACCENT + ")" : "rgba(" + ACCENT + ", " + a + ")";
     });
   }
+  function restore() {
+    touched.forEach(function (t) {
+      // only undo our own change; if Streamlit has written a new value since, leave it alone
+      if (t.el.style.getPropertyValue(t.prop) === t.applied) {
+        if (t.orig === "") t.el.style.removeProperty(t.prop);
+        else t.el.style.setProperty(t.prop, t.orig);
+      }
+    });
+    touched = [];
+  }
+  var obs = new MutationObserver(function () { clearTimeout(timer); timer = setTimeout(fix, 120); });
   function fix() {
+    obs.disconnect();
     try {
+      restore();
       doc.querySelectorAll("*").forEach(function (el) {
         if (el.closest('[data-testid="stException"], [data-testid="stAlert"]')) return;
         var cs = win.getComputedStyle(el);
@@ -239,18 +254,20 @@ components.html(r"""
           var v = cs[p[0]];
           if (v && v.indexOf("rgb") >= 0) {
             var n = recolor(v);
-            if (n !== v) el.style.setProperty(p[1], n, "important");
+            if (n !== v) {
+              var orig = el.style.getPropertyValue(p[1]);
+              el.style.setProperty(p[1], n);
+              touched.push({el: el, prop: p[1], orig: orig, applied: el.style.getPropertyValue(p[1])});
+            }
           }
         });
       });
     } catch (e) {}
+    obs.observe(doc.body, CFG);
   }
-  function later() { clearTimeout(timer); timer = setTimeout(fix, 150); }
   fix();
   setTimeout(fix, 800);
   setTimeout(fix, 2500);
-  new MutationObserver(later).observe(doc.body, {subtree: true, childList: true, attributes: true,
-                                                 attributeFilter: ["style", "class"]});
 })();
 </script>
 """, height=1)
