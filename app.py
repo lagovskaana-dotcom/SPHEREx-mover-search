@@ -134,21 +134,21 @@ CSS = """
 .stApp h1, .stApp h2, .stApp h3, .stApp h4 { color: #FCF1D0; font-weight: 600; }
 .stApp h3 { font-family: Georgia, 'Times New Roman', serif; font-weight: 400; letter-spacing: .01em; }
 button[data-testid="stBaseButton-primary"], button[data-testid="stBaseButton-primary"] p { color: #010736 !important; }
-div[data-baseweb="tab-highlight"], div[role="tablist"] > div[aria-hidden="true"] { background-color: #FCF1D0 !important; }
-button[role="tab"][aria-selected="true"], button[role="tab"][aria-selected="true"] p { color: #FCF1D0 !important; }
-button[role="tab"]:hover, button[role="tab"]:hover p { color: #FCF1D0 !important; }
-div[role="slider"] { background-color: #FCF1D0 !important; box-shadow: none !important; }
-[data-testid="stSliderThumbValue"], [data-testid="stSliderTickBarMin"], [data-testid="stSliderTickBarMax"] { color: #FCF1D0 !important; }
-div[data-baseweb="slider"] div[style*="255, 75, 75"], div[data-baseweb="slider"] div[style*="ff4b4b"] { filter: sepia(1) saturate(.35) brightness(1.5) hue-rotate(5deg); }
-span[data-baseweb="tag"] { background-color: #22396F !important; color: #FCF1D0 !important; border: 1px solid #FCF1D0; }
+div[data-baseweb="tab-highlight"], div[role="tablist"] > div[aria-hidden="true"] { background-color: #6399FD !important; }
+button[role="tab"][aria-selected="true"], button[role="tab"][aria-selected="true"] p { color: #6399FD !important; }
+button[role="tab"]:hover, button[role="tab"]:hover p { color: #6399FD !important; }
+div[role="slider"] { background-color: #6399FD !important; box-shadow: none !important; }
+[data-testid="stSliderThumbValue"] { color: #6399FD !important; }
+[data-testid="stSliderTickBarMin"], [data-testid="stSliderTickBarMax"] { color: #FCF1D0 !important; }
+span[data-baseweb="tag"] { background-color: #22396F !important; color: #FCF1D0 !important; border: 1px solid #6399FD; }
 span[data-baseweb="tag"] span, span[data-baseweb="tag"] svg { color: #FCF1D0 !important; fill: #FCF1D0 !important; }
 div[data-baseweb="select"] > div, div[data-baseweb="input"], div[data-baseweb="base-input"], div[data-baseweb="textarea"] {
   background-color: #0D1C42 !important; border-color: #22396F !important; }
 div[data-baseweb="input"] input, div[data-baseweb="base-input"] input, div[data-baseweb="select"] input { color: #FCF1D0 !important; }
 button[data-testid="stBaseButton-secondary"] { background-color: #0D1C42 !important; border: 1px solid #22396F !important; color: #FCF1D0 !important; }
-button[data-testid="stBaseButton-secondary"]:hover { border-color: #FCF1D0 !important; }
-button[data-testid="stBaseButton-primary"] { background-color: #FCF1D0 !important; border-color: #FCF1D0 !important; }
-div[data-baseweb="checkbox"] > div:first-child, div[data-baseweb="radio"] > div:first-child { border-color: #FCF1D0 !important; }
+button[data-testid="stBaseButton-secondary"]:hover { border-color: #6399FD !important; }
+button[data-testid="stBaseButton-primary"] { background-color: #6399FD !important; border-color: #6399FD !important; }
+div[data-baseweb="checkbox"] > div:first-child, div[data-baseweb="radio"] > div:first-child { border-color: #6399FD !important; }
 .titlerow { display: flex; align-items: baseline; gap: 1.1rem; flex-wrap: wrap; }
 .byline { font-size: .74rem; letter-spacing: .16em; text-transform: uppercase; color: #FCF1D0; background: rgba(34,57,111,.55);
   border: 1px solid #22396F; border-radius: 999px; padding: .22rem .8rem; white-space: nowrap; }
@@ -174,7 +174,7 @@ div[data-testid="stTabs"] button[role="tab"] { font-size: 1rem; }
 .panel a:hover { border-bottom-color: #FCF1D0; }
 .card { position: relative; overflow: hidden; }
 .card:before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: #22396F; }
-.card:hover:before { background: #FCF1D0; }
+.card:hover:before { background: #6399FD; }
 .card .big { position: absolute; right: 1rem; top: .35rem; font-family: Georgia, serif; font-size: 2.6rem;
   color: rgba(252,241,208,.14); line-height: 1; }
 .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
@@ -209,6 +209,36 @@ div[data-testid="stTabs"] button[role="tab"] { font-size: 1rem; }
 EMBED = st.query_params.get("embed") == "1"
 _bg, _dark = pick_background()
 st.markdown(CSS.replace("__BG__", _bg).replace("__DARK__", f"{_dark:.2f}"), unsafe_allow_html=True)
+
+# Recolours Streamlit's default red accent to the blue accent #6399FD, independent of config.toml.
+components.html("""
+<script>
+(function () {
+  const RED = ["rgb(255, 75, 75)", "rgb(255, 43, 43)"];
+  const CREAM = "rgb(99, 153, 253)";  // accent #6399FD
+  const win = window.parent, doc = win.document;
+  let timer = null;
+  function fix() {
+    doc.querySelectorAll("*").forEach(function (el) {
+      const cs = win.getComputedStyle(el);
+      if (RED.indexOf(cs.color) >= 0) el.style.setProperty("color", CREAM, "important");
+      if (RED.indexOf(cs.backgroundColor) >= 0) el.style.setProperty("background-color", CREAM, "important");
+      ["Top", "Bottom", "Left", "Right"].forEach(function (side) {
+        if (RED.indexOf(cs["border" + side + "Color"]) >= 0)
+          el.style.setProperty("border-" + side.toLowerCase() + "-color", CREAM, "important");
+      });
+      const st = el.getAttribute("style");
+      if (st && st.indexOf("255, 75, 75") >= 0)
+        el.setAttribute("style", st.split("rgb(255, 75, 75)").join(CREAM));
+    });
+  }
+  function later() { clearTimeout(timer); timer = setTimeout(fix, 150); }
+  fix();
+  new MutationObserver(later).observe(doc.body, {subtree: true, childList: true, attributes: true,
+                                                 attributeFilter: ["style", "class"]});
+})();
+</script>
+""", height=0)
 if EMBED:
     st.markdown("<style>.hero, div[data-baseweb='tab-list'], [data-testid='stSidebar'], "
                 "[data-testid='stSidebarCollapsedControl'] { display: none !important; } "
