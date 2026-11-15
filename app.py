@@ -149,6 +149,8 @@ button[data-testid="stBaseButton-secondary"] { background-color: #0D1C42 !import
 button[data-testid="stBaseButton-secondary"]:hover { border-color: #6399FD !important; }
 button[data-testid="stBaseButton-primary"] { background-color: #6399FD !important; border-color: #6399FD !important; }
 div[data-baseweb="checkbox"] > div:first-child, div[data-baseweb="radio"] > div:first-child { border-color: #6399FD !important; }
+/* no colour fades: the recolour script swaps colours instantly, so nothing can flash pink */
+.stApp *, .stApp *:before, .stApp *:after { transition: none !important; }
 .titlerow { display: flex; align-items: baseline; gap: 1.1rem; flex-wrap: wrap; }
 .byline { font-size: .74rem; letter-spacing: .16em; text-transform: uppercase; color: #FCF1D0; background: rgba(34,57,111,.55);
   border: 1px solid #22396F; border-radius: 999px; padding: .22rem .8rem; white-space: nowrap; }
